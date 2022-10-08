@@ -1,30 +1,22 @@
 import { serve } from "https://deno.land/std@0.159.0/http/server.ts"
 import { Context, Hono } from "https://deno.land/x/hono@v2.2.5/mod.ts"
-import { basicAuth, logger } from 'https://deno.land/x/hono@v2.2.5/middleware.ts'
+import { logger, serveStatic } from 'https://deno.land/x/hono@v2.2.5/middleware.ts'
 
 import { APIpathResolver } from "./file-based-api-router.ts";
 import { importModule } from 'https://deno.land/x/dynamic_import_ponyfill@v0.1.3/mod.ts'
-import { Environment,ValidatedData } from "https://deno.land/x/hono@v2.2.5/hono.ts";
+import { Environment, ValidatedData } from "https://deno.land/x/hono@v2.2.5/hono.ts";
 
 const app = new Hono()
 
-const basicAuthMiddleWare = basicAuth({
-  username: 'hono',
-  password: 'bart',
-})
-
 app.use('*', logger())
 
-app.use('/auth/*', basicAuthMiddleWare)
-
-app.get('/auth/page', (c) => {
-  console.log("Reached page")
-  return c.text('You are authorized')
-})
-
-app.get('/', (c) => c.text('Hello! Hono!'))
-
 app.all('/api/*', apiHandler)
+
+const requestHandler = Deno.env.get("DEV") ? proxyHandler : serveStatic({ root: './vueapp/dist' })
+app.use('*', (c, n) => {
+  return requestHandler(c, n)
+})
+app.all('*', (c) => c.text('500: Server error'))
 
 async function apiHandler(c: Context<string, Environment, ValidatedData>) {
   try {
@@ -41,5 +33,10 @@ async function apiHandler(c: Context<string, Environment, ValidatedData>) {
   }
 }
 
+function proxyHandler(c: Context<string, Environment, ValidatedData>) {
+  const newUrl = c.req.url.replace(":8000", ":8080")
+  const newRequest = new Request(newUrl, c.req)
+  return fetch(newRequest)
+}
 
 serve(app.fetch)
