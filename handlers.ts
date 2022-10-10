@@ -1,7 +1,7 @@
 import { join, resolve, toFileUrl, fromFileUrl } from "https://deno.land/std@0.144.0/path/mod.ts";
 import { Context } from "https://deno.land/x/hono@v2.2.5/mod.ts"
 
-import { importModule } from './patched-import-module.ts'
+import { importModule } from 'https://cdn.jsdelivr.net/gh/ayoreis/import@90ad8236d8542547fb8c8f789f25a917c05ddb84/mod.ts'
 import { Environment, ValidatedData } from "https://deno.land/x/hono@v2.2.5/hono.ts";
 
 
@@ -32,7 +32,11 @@ export async function apiHandler(c: Context<string, Environment, ValidatedData>)
     // First check if it exists, because importModule can throw bullshit errors
     await Deno.stat(fromFileUrl(apiPath))
 
-    const module = await importModule(apiPath)
+    const module = await importModule(apiPath, {
+      force: true
+    })
+    if (typeof module.handler !== "function") throw new Error("No handler function exported")
+
     return module.handler(c.req)
   } catch (err) {
     console.log("Caught error:")
