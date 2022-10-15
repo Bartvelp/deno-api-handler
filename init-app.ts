@@ -1,5 +1,7 @@
 import { parse } from "https://deno.land/std@0.159.0/flags/mod.ts";
-import { ensureDir } from "https://deno.land/std@0.144.0/fs/mod.ts";
+import { ensureDir } from "https://deno.land/std@0.159.0/fs/mod.ts";
+import { dirname, join } from "https://deno.land/std@0.159.0/path/mod.ts";
+
 
 const flags = parse(Deno.args, {
   boolean: ["vscode"],
@@ -22,8 +24,13 @@ export async function handler(req: Request) {
   console.log('Default api handler already exists: ', defaultApiHandlerPath)
 }
 
-const defaultAppLocation = import.meta.url
-await Deno.writeTextFile("./deno_app.ts", await fetch(defaultAppLocation).then(r => r.text()))
+await Deno.writeTextFile('./api/_apiExports.ts', "") // Create empty init api exports, will be filled on first launch
+
+// Copy './app.ts' to the local dir
+const scriptDir = dirname(import.meta.url)
+const defaultAppLocation = join(scriptDir, 'cli.ts')
+const defaultCliAppScript = await fetch(defaultAppLocation).then(r => r.text())
+await Deno.writeTextFile("./deno_app.ts", defaultCliAppScript.replace("./app.ts", join(scriptDir, 'app.ts')))
 
 if (flags.vscode) {
   console.log('Also adding .vscode folder with contents')
@@ -37,6 +44,8 @@ if (flags.vscode) {
   `)
 }
 
+console.log('Success, run the following command to start:')
+console.log('deno run -A --watch deno_app.ts --dev')
 async function exists(filename: string): Promise<boolean> {
   try {
     await Deno.stat(filename);
@@ -51,4 +60,4 @@ async function exists(filename: string): Promise<boolean> {
       throw error;
     }
   }
-};
+}

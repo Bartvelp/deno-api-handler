@@ -6,7 +6,7 @@ import { createHonoApp } from "./createHonoApp.ts";
 export type ApiManifest = {
   endpoints: {
     [path: string]: {
-      handler: (req: Request) => Promise<Response>
+      handler?: (req: Request) => Promise<Response> | Response
     }
   },
   baseUrl: string
