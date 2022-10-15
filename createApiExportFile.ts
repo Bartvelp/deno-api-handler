@@ -22,7 +22,6 @@ export async function createApiExportFile(apiDirPath: string) {
         const file = toFileUrl(entry.path).href.substring(
           apiDirUrl.href.length,
         );
-        console.log(file, apiDirUrl.href)
         apiEndpoints.push(file);
       }
     }
